@@ -60,9 +60,8 @@ void merge_sort(vector<int>& arr, vector<int>& buffer, size_t length, int from)
     int length_left = length / 2;
     int length_right = length - length_left;
 
-    #pragma omp task firstprivate (arr, length_left)
+    #pragma omp task
     merge_sort(arr, buffer, length_left, from);
-    #pragma omp task firstprivate (arr, length_right)
     merge_sort(arr, buffer, length_right, from + length_left);
 
    #pragma omp taskwait
@@ -108,10 +107,10 @@ int main(){
    {
     #pragma omp single
     merge_sort(arr1, buffer, length, 0);
-    }
-    auto end = chrono::steady_clock::now();
-    auto time = chrono::duration_cast<chrono::milliseconds>(end - begin);
-    cout << "result: " << endl;
-    output(arr1);
-    cout << "time: "<<time.count()<<endl;
+   }
+   auto end = chrono::steady_clock::now();
+   auto time = chrono::duration_cast<chrono::milliseconds>(end - begin);
+   cout << "result: " << endl;
+   output(arr1);
+   cout << "time: "<<time.count()<<endl;
 }
