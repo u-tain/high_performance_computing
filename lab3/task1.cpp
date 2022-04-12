@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &nranks);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (rank == 0){
-cout << "введите точность" << endl;
+        cout << "введите точность" << endl;
         cin >> N;
     }
     z = N;
