@@ -38,26 +38,31 @@ void generator(int** Matrix, int rows, int cols) {
 }
 
 int main() {
-        int row1, row2, col1, col2,type;
+        int row1, row2, col1, col2, type;
         int** A;
         int** B;
+        int nranks, rank
+        MPI_Init(NULL, NULL);
+        MPI_Comm_size(MPI_COMM_WORLD, &nranks); 
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        if (rank == 0){
+                cout << "if you want to enter a matrix enter 1 \n" <<
+                        "if you want to generate a random matrix enter 2" << endl;
+                cin >> type;
 
-        cout << "if you want to enter a matrix enter 1 \n" <<
-                "if you want to generate a random matrix enter 2" << endl;
-        cin >> type;
+                cout << "enter the number of rows of the first matrix" << endl;
+                cin >> row1;
+                cout << "enter the number of columns of the first matrix" << endl;
+                cin >> col1;
 
-        cout << "enter the number of rows of the first matrix" << endl;
-        cin >> row1;
-        cout << "enter the number of columns of the first matrix" << endl;
-        cin >> col1;
-
-        cout << "enter the number of rows of the second matrix" << endl;
-        cin >> row2;
-        cout << "enter the number of columns of the second matrix" << endl;
-        cin >> col2;
-
+                cout << "enter the number of rows of the second matrix" << endl;
+                cin >> row2;
+                cout << "enter the number of columns of the second matrix" << endl;
+                cin >> col2;
+        }
         if (col1 != row2) {
                 cout << "such matrices cannot be multiplied" << endl;
+                MPI_Finalize();
                 return 0;
         }
         else {
@@ -87,15 +92,17 @@ int main() {
                 for (int i = 0; i < row1; i++)
                         result[i] = new int[col2];
 
-                cout << "result:" << endl;
-                auto begin = chrono::steady_clock::now();
                 multiplier(A, B, result, row1, col1, col2);
-               
-                output(result, row1, col2);
-
+                
+                if (rank == 0){
+                        cout << "result:" << endl;
+                        output(result, row1, col2);
+                }
+                
                 for (int i = 0; i < row1; i++) delete[]A[i]; delete[]A;
                 for (int i = 0; i < row2; i++) delete[]B[i]; delete[]B;
                 for (int i = 0; i < row1; i++) delete[]result[i]; delete[]result;
+                MPI_Finalize();
+                return 0;
         }
-        return 0;
 }
