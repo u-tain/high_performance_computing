@@ -4,7 +4,7 @@
 using namespace std;
 
 void multiplier(int **A, int **B, int **c, int row1, int col1, int col2) {
-
+        MPI_Bcast(&row1,1,MPI_INT,0,MPI_COMM_WORLD); 
         for (int i = 0; i < row1; i++)
                 for (int j = 0; j < col2; j++)
                         for (int x = 0; x < col1; x++)
