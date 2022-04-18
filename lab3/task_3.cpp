@@ -51,6 +51,46 @@ void merge_arrays(vector<int>& arr, vector<int>& buffer, size_t length_left, siz
         arr[start_left + i] = buffer[start_left + i];
     }
 }
+int merge_sorted_after_multithreading(std::vector<int>& arr, std::vector<int>& buffer,
+	std::vector<int>& thread_from, std::vector<int>& thread_length,
+	unsigned int threads_count, int i_thread)
+{
+	if (threads_count == 1)
+		return thread_length[i_thread];
+
+	int count_left = threads_count / 2;
+	int i_thread_left = i_thread;
+	int count_right = threads_count - count_left;
+	int i_thread_right = i_thread + count_left;
+
+	// вызываем рекурсию для левой и правой части
+	int length_left_merged = merge_sorted_after_multithreading(arr, buffer, thread_from, thread_length, count_left, i_thread_left);
+	int length_rigth_merged = merge_sorted_after_multithreading(arr, buffer, thread_from, thread_length, count_right, i_thread_right);
+
+	// слияние упорядоченных частей
+	merge_arrays(arr, buffer, length_left_merged, length_rigth_merged, thread_from[i_thread_left], thread_from[i_thread_right]);
+	return length_left_merged + length_rigth_merged;
+}
+
+void make_parts(std::vector<int>& thread_from, std::vector<int>& thread_length, unsigned int threads_count, size_t length)
+{
+	int dlength = (length / threads_count);
+	int odd_length = length % threads_count;
+	int offset = 0;
+	for (int i = 0; i < threads_count; ++i)
+	{
+		if (odd_length > 0)
+		{
+			thread_length.push_back(dlength + 1);
+			--odd_length;
+		}
+		else
+			thread_length.push_back(dlength);
+
+		thread_from.push_back(offset);
+		offset += thread_length[i];
+	}
+}
 
 void merge_sort(vector<int>& arr, vector<int>& buffer, size_t length, int from)
 {
@@ -58,7 +98,7 @@ void merge_sort(vector<int>& arr, vector<int>& buffer, size_t length, int from)
 
     int length_left = length / 2;
     int length_right = length - length_left;
-
+    
     merge_sort(arr, buffer, length_left, from);
     merge_sort(arr, buffer, length_right, from + length_left);
 
@@ -78,8 +118,10 @@ void output(vector<int>& arr){
     cout << endl;
 }
 
-int main(){
-    int length, type, nranks, rank;
+int main(int argc, char** argv){
+    //инициализация
+    char processor_name[MPI_MAX_PROCESSOR_NAME];
+    int length, type, nranks, rank, name_len;
     vector<int> arr1;
     vector<int> buffer;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
@@ -91,7 +133,6 @@ int main(){
       cin >> type;
       cout << "enter the size of the array"<<endl;
       cin >> length;
-    }
     if (type == 1) {
         int elem = 0;
         for (int i = 0; i < length; ++i){
@@ -102,12 +143,31 @@ int main(){
                 output(arr1);
     }
     else generate_int_array(arr1, length);
-    output(arr1);
+    // output(arr1);
     for (int i = 0; i < length; ++i)
         buffer.push_back(0);
-  
-    merge_sort(arr1, buffer, length, 0);
-  
+    
+    //начинаем сортировку
+	// делим массив на примерно равные части, вычисляем указатели на начала частей и их длины
+	vector<int> thread_from;
+    vector<int> thread_length;
+	make_parts(thread_from, thread_length, threads_count, length);
+    int length_length = thread_length.size();
+	// запускаем все потоки
+        MPI_Bcast(&arr[0], length, MPI_INT , 0, MPI_COMM_WORLD);
+        MPI_Bcast(&buffer[0], length, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&thread_length[0], length_length, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&thread_from[0], length_length, MPI_INT, 0, MPI_COMM_WORLD);
+    }
+    merge_sort(arr, buffer, thread_length[rank], thread_from[rank]);
+    MPI_Get_processor_name(processor_name, &name_len);
+    cout << 'node: ' << processor_name << 'rank: '<< rank << 'indices: '<< thread_from[rank]<<endl;
+	// ожидаем пока все выполнятся
+	MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Gatherv(&arr[0], length,  MPI_INT,&buffer[0], thread_length, thread_from, MPI_INT, 0, MPI_COMM_WORLD)
+    cout<<buffer<< endl;
+	merge_sorted_after_multithreading(arr, buffer, thread_from, thread_length, nranks, 0);
+    
     if (rank == 0){
       cout << "result: " << endl;
       output(arr1);
