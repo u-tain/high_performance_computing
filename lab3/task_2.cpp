@@ -59,11 +59,12 @@ int main() {
                 cin >> row2;
                 cout << "enter the number of columns of the second matrix" << endl;
                 cin >> col2;
-        }
+        
         if (col1 != row2) {
                 cout << "such matrices cannot be multiplied" << endl;
                 MPI_Finalize();
                 return 0;
+        }
         }
         else {
                 A = new int* [row1];
