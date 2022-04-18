@@ -99,7 +99,26 @@ void merge_arrays(int *arr, int *buffer, size_t length_left, size_t length_right
 		arr[start_left + i] = buffer[start_left + i];
 	}
 }
+int merge_sorted_after_multithreading(int *arr, int *buffer,
+	int *thread_from, int *thread_length,
+	unsigned int threads_count, int i_thread)
+{
+	if (threads_count == 1)
+		return thread_length[i_thread];
 
+	int count_left = threads_count / 2;
+	int i_thread_left = i_thread;
+	int count_right = threads_count - count_left;
+	int i_thread_right = i_thread + count_left;
+
+	// вызываем рекурсию для левой и правой части
+	int length_left_merged = merge_sorted_after_multithreading(arr, buffer, thread_from, thread_length, count_left, i_thread_left);
+	int length_rigth_merged = merge_sorted_after_multithreading(arr, buffer, thread_from, thread_length, count_right, i_thread_right);
+
+	// слияние упорядоченных частей
+	merge_arrays(arr, buffer, length_left_merged, length_rigth_merged, thread_from[i_thread_left], thread_from[i_thread_right]);
+	return length_left_merged + length_rigth_merged;
+}
 int main(){
     int length, type, nranks, rank, name_len;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
